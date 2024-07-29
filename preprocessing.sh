@@ -1,4 +1,4 @@
-#!/bin/bash/
+#!/bin/bash
 : 'This file will look through a single folder, find any samples with BAM files nested, and run velocyto on them.
 Folder structure: Sample path > Sample(s) > BAM files, filtered_feature_bc_matrix > barcodes
 If you want to use your own barcodes, make a barcodes.tsv or barcodes.tsv.gz file, place it in the sample folder,
@@ -11,9 +11,13 @@ Leah Dorman, Sarah Ancheta, Ben Iovino  7/26/24 CZ-Biohub
 
 source config.cfg
 
+# Make data directory and copy processed data for next step
+[ -d "data" ] || mkdir -p "data"
+cp $PROC_DATA data/proc_data.h5ad
+
 #1. Make a working directory (if it doesn't exist)
 [ -d "$WDIR" ] || mkdir -p "$WDIR"
-cd "$WDIR"
+cd "$WDIR" || exit
 
 #2. Set up directories for any scripts and slurm logs
 [ -d "old_scripts" ] || mkdir -p "old_scripts"
@@ -68,6 +72,7 @@ for FOLDER in $SAMPLE_PATH/*; do
      mkdir $SAMPLE
      cp -r $SAMPLE_PATH/$SAMPLE/outs/$BAM_FILE $SAMPLE/
      cp -r $SAMPLE_PATH/$SAMPLE/outs/$BARCODE_PATH $SAMPLE/
+     BARCODE_FILE=$(basename $BARCODE_PATH)
 
 # Make an sbatch script to run velocity - still in loop
      cat > $SAMPLE'_velocity.sbatch' <<EOF
@@ -103,10 +108,10 @@ cd $WDIR/$SAMPLE
 
 if [[ "$MASK" == "Present" ]]; then
      echo "Mask found, running velocity"
-     velocyto run -b $BARCODE_FILE -o $OUTPUT_PATH -m ../repeat_mask.gtf $BAM_FILE $WDIR/annotation.gtf
+     velocyto run -b $BARCODE_FILE -o $OUTPUT_PATH -m ../repeat_mask.gtf $BAM_FILE $WDIR/annotation.gtf -e $SAMPLE
 else
      echo "no mask file found, running unmasked"
-     velocyto run -b $BARCODE_FILE -o $OUTPUT_PATH $BAM_FILE $WDIR/annotation.gtf
+     velocyto run -b $BARCODE_FILE -o $OUTPUT_PATH $BAM_FILE $WDIR/annotation.gtf -e $SAMPLE
 
 fi
 
