@@ -1,4 +1,4 @@
-''' Run scvelo-deterministic on your desired subset of samples.
+'''Run scvelo-deterministic on your desired subset of samples.
 
 Sarah Ancheta, Ben Iovino   07/29/24    CZ-Biohub
 '''

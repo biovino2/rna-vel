@@ -23,20 +23,19 @@ def replace_sample_code(cell_id: str) -> str:
     """
 
     sample_mapping = {
-    'SK7J2': 'TDR118',
-    '7TH98': 'TDR119',
-    '47VDB': 'TDR124',
-    'BOP08': 'TDR125',
-    'H12VC': 'TDR126',
-    'WX1JE': 'TDR127',
-    '48LIH': 'TDR128'
+    'TDR118reseq': 'TDR118',
+    'TDR119reseq': 'TDR119',
+    'TDR124reseq': 'TDR124',
+    'TDR125reseq': 'TDR125',
+    'TDR126': 'TDR126',
+    'TDR127': 'TDR127',
+    'TDR128': 'TDR128'
     }
 
     parts = cell_id.split(':')
-    sample_code = parts[0].split('_')[-1]  # Extract the sample code
     cell_barcode = parts[1].replace('x', '')  # Remove trailing 'x' if present
 
-    return f"{cell_barcode}-{sample_mapping.get(sample_code, sample_code)}"
+    return f"{cell_barcode}-{sample_mapping[parts[0]]}"
 
 
 def combine_subset(subset: list[str], comb_file: str):
@@ -79,7 +78,7 @@ def main():
     adata.obs.set_index('new_id', inplace=True)
 
     # Match cell ID format for annotated "clean" adata
-    clean_adata = sc.read_h5ad('data/proc_data.h5ad')
+    clean_adata = sc.read_h5ad('data/all_processed_RNA.h5ad')
     clean_adata.obs['dataset'] = clean_adata.obs['dataset'].astype(str)
     clean_adata.obs['new_id'] = clean_adata.obs.index.str.replace(r'-\d+.*$', '', regex=True) + '-' + clean_adata.obs['dataset']
     clean_adata.obs.set_index('new_id', inplace=True)
@@ -92,7 +91,8 @@ def main():
     # First check that the indices are aligned
     additional_obs_df = clean_adata.obs.loc[adata.obs.index]
     adata.obs = pd.concat([adata.obs, additional_obs_df], axis=1)
-    adata.write_h5ad(f'data/{args.filename}_splice_counts.h5ad')
+    adata.write_h5ad(f'data/splice_counts/{args.filename}_splice_counts.h5ad')
+
 
 if __name__ == '__main__':
     main()

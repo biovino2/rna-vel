@@ -13,7 +13,6 @@ source config.cfg
 
 # Make data directory and copy processed data for next step
 [ -d "data" ] || mkdir -p "data"
-cp $PROC_DATA data/proc_data.h5ad
 
 #1. Make a working directory (if it doesn't exist)
 [ -d "$WDIR" ] || mkdir -p "$WDIR"
