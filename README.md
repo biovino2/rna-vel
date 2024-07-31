@@ -1,13 +1,23 @@
 # rna-vel
 toolkit for working with RNA velocity
 
+## Installation
+You can install this repository with the following commands:
+
+```
+git clone https://github.com/biovino2/rna-vel
+cd rna-vel/
+conda env create --file env.yml
+conda activate rna-vel
+```
+
 ## Pipeline
 There are several steps involved in calculating and visualizing velocity:
 
 1) Preprocessing the raw BAM file from sequencing to get intron/exon counts
 2) If you have multiple samples, preparing each one for velocity calculations
 3) Calculating velocity
-4) Plotting velocity alongside scRNA-seq/ATAC-seq data 
+4) Plotting velocity alongside scRNA-seq/ATAC-seq data
 
 ## Preprocessing Data 
 Copy the template configuration file:
