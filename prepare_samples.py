@@ -1,4 +1,4 @@
-'''This script combines the desired subset of samples and saves them as a combined adata object.
+'''This script combines the desired subset of samples and saves them as a combined object.
 
 Sarah Ancheta, Ben Iovino   07/29/24    CZ-Biohub
 '''
@@ -22,6 +22,7 @@ def replace_sample_code(cell_id: str) -> str:
         str: sample ID
     """
 
+    # This mapping has to be performed because the single cell files have different sample names
     sample_mapping = {
     'TDR118reseq': 'TDR118',
     'TDR119reseq': 'TDR119',
@@ -38,8 +39,8 @@ def replace_sample_code(cell_id: str) -> str:
     return f"{cell_barcode}-{sample_mapping[parts[0]]}"
 
 
-def combine_subset(subset: list[str], comb_file: str):
-    """Saves a combined adata object of the desired subset of samples.
+def combine_subset(subset: 'list[str]', comb_file: str):
+    """Saves a combined object of the desired subset of samples.
 
     Args:
         subset (list): List of loom files to combine
@@ -68,30 +69,29 @@ def main():
 
     if not os.path.exists('data/subsets'):
         os.mkdir('data/subsets')
-    if not os.path.exists('data/splice_counts'):
-        os.mkdir('data/splice_counts')
 
     # Combine samples and set them to match the sample ID (rather than loom file ID)
     combine_subset(args.subset, f'data/subsets/{args.filename}.loom')
-    adata  = scv.read_loom(f'data/subsets/{args.filename}.loom')
-    adata.obs['new_id'] = adata.obs.index.map(replace_sample_code)
-    adata.obs.set_index('new_id', inplace=True)
+    subset  = scv.read_loom(f'data/subsets/{args.filename}.loom')
+    subset.obs['new_id'] = subset.obs.index.map(replace_sample_code)
+    subset.obs.set_index('new_id', inplace=True)
 
-    # Match cell ID format for annotated "clean" adata
-    clean_adata = sc.read_h5ad('data/all_processed_RNA.h5ad')
-    clean_adata.obs['dataset'] = clean_adata.obs['dataset'].astype(str)
-    clean_adata.obs['new_id'] = clean_adata.obs.index.str.replace(r'-\d+.*$', '', regex=True) + '-' + clean_adata.obs['dataset']
-    clean_adata.obs.set_index('new_id', inplace=True)
+    # Match cell ID format for annotated "clean" subset
+    all = sc.read_h5ad('data/all_RNA.h5ad')
+    all.obs['dataset'] = all.obs['dataset'].astype(str)
+    all.obs['new_id'] = all.obs.index.str.replace(r'-\d+.*$', '', regex=True) + '-' + all.obs['dataset']
+    all.obs.set_index('new_id', inplace=True)
 
-    # Subset adata object to only include barcodes from the "clean" adata object
-    barcodes = clean_adata.obs.index.tolist()
-    adata = adata[adata.obs.index.isin(barcodes)].copy()
+    # Subset subset object to only include barcodes from the "clean" subset object
+    barcodes = all.obs.index.tolist()
+    subset = subset[subset.obs.index.isin(barcodes)].copy()
 
-    # Copy over all obs columns from the clean adata object to the new object
+    # Copy over all obs columns from the clean subset object to the new object
     # First check that the indices are aligned
-    additional_obs_df = clean_adata.obs.loc[adata.obs.index]
-    adata.obs = pd.concat([adata.obs, additional_obs_df], axis=1)
-    adata.write_h5ad(f'data/splice_counts/{args.filename}_splice_counts.h5ad')
+    additional_obs_df = all.obs.loc[subset.obs.index]
+    subset.obs = pd.concat([subset.obs, additional_obs_df], axis=1)
+    subset.write_h5ad(f'data/subsets/{args.filename}.h5ad')
+    os.remove(f'data/subsets/{args.filename}.loom')  # not needed for downstream steps
 
 
 if __name__ == '__main__':

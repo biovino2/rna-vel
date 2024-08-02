@@ -3,6 +3,7 @@
 Sarah Ancheta, Ben Iovino   07/29/24    CZ-Biohub
 '''
 
+from anndata._core.anndata import AnnData
 import argparse
 import pandas as pd
 import scanpy as sc
@@ -10,6 +11,27 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import scvelo as scv
+
+
+def graph_velocity(velocity: AnnData, sample: str, data: str):
+    """Saves a graph of RNA velocity for sample path and data type.
+
+    Args:
+        velocity (AnnData): Velocity dataframe
+        sample (str): Path to sample file
+        data (str): Data type (e.g. rna, atac, joint)
+    """
+
+    if not os.path.exists('data/graphs'):
+        os.mkdir('data/graphs')
+
+    scv.pl.velocity_embedding_stream(
+        velocity,
+        basis=f'X_umap.{data}',
+        c='annotation_ML_coarse',
+        legend_loc='right',
+        title=f'RNA Velocity {sample}-{data}',
+        save=f'data/graphs/{sample}-{data}.png')
 
 
 def main():
@@ -22,7 +44,7 @@ def main():
     args = parser.parse_args()
 
     # Read individual sample (single-cell data)
-    sample = f'data/{args.sample}_processed_RNA.h5ad'
+    sample = f'data/{args.sample}_RNA.h5ad'
     sample = sc.read_h5ad(sample)
 
     # Add sample ID to cell ID's
@@ -30,7 +52,7 @@ def main():
     sample.obs.set_index('new_id', inplace=True)
 
     # Read all samples (single-cell data)
-    all = 'data/all_processed_RNA.h5ad'
+    all = 'data/all_RNA.h5ad'
     all = sc.read_h5ad(all)
     all.obs['dataset'] = all.obs['dataset'].astype(str)
     all.obs['new_id'] = all.obs.index.str.replace(r'-\d+.*$', '', regex=True) + '-' + all.obs['dataset']
@@ -54,16 +76,7 @@ def main():
     velocity.obs[f'X_umap.{args.data}'] = velocity.obs.index.map(sample_umap_dict)
     velocity.obsm[f'X_umap.{args.data}'] = np.array(list(velocity.obs[f'X_umap.{args.data}']))  # move to obsm
 
-    # Plot velocity
-    if not os.path.exists('data/graphs'):
-        os.mkdir('data/graphs')
-    scv.pl.velocity_embedding_stream(
-        velocity,
-        basis=f'X_umap.{args.data}',
-        c='annotation_ML_coarse',
-        legend_loc='right',
-        title=f'RNA Velocity {args.sample}-{args.data}',
-        save=f'data/graphs/{args.sample}-{args.data}.pdf')
+    graph_velocity(velocity, args.sample, args.data)
 
 
 if __name__ == '__main__':
